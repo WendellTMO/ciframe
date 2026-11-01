@@ -72,12 +72,7 @@ angular.module('deciframeApp').controller('SequenciaController', function($http,
   }
 
   vm.adicionarAcorde = function(acorde) {
-    var ultimo = vm.novaSequencia[vm.novaSequencia.length - 1];
-    if (ultimo && ultimo.acorde === acorde.acorde) {
-      vm.novaSequencia.pop();
-    } else {
-      vm.novaSequencia.push({ 'acorde': acorde.acorde, 'cor': acorde.cor });
-    }
+    vm.novaSequencia.push({ 'acorde': acorde.acorde, 'cor': acorde.cor });
     vm.erroCadastro = "";
   }
 

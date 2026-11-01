@@ -669,6 +669,12 @@ a:active {
   background: #BA007C;
   color: #FFF;
 }
+.modal-sequencia-card .acordes-container df-hex .hex {
+  fill: #FFF !important;
+}
+.modal-sequencia-card .acordes-container df-hex .acorde {
+  color: #BA007C !important;
+}
 .modal-sequencia-fechar {
   position: absolute;
   top: 5px;

@@ -9,8 +9,9 @@ O teste automatizado é o `scripts/regressao_sequencias.py`. Ele roda dentro do 
 - O reinício com o banco já criado: rodar o `init_db` duas vezes mantém as 6 sequências, sem duplicar.
 - O teste de regressão das 6 sequências, descrito na próxima seção.
 - A busca em minúsculo: `bm,g,d,a` encontra as mesmas 199 músicas que `Bm,G,D,A`.
+- As regras do `POST /sequencias`: 400 para corpo que não é JSON, `acordes` que não é lista, corpo sem `acordes`, lista vazia, lista só com espaço e acorde com `;`. Também 409 para `C G Am F`, `GM F` e `Gm F` gravadas como sequências diferentes e `D7+ G7+` criada com 3 músicas.
 
-As regras do `POST /sequencias` foram conferidas pelo `test_client` do Flask dentro do Docker, sem script no repositório:
+Antes de entrarem no script, as regras do `POST /sequencias` foram conferidas à mão pelo `test_client` do Flask dentro do Docker:
 
 | Entrada | Resposta |
 |---|---|
@@ -60,14 +61,25 @@ docker build -t ciframe . && docker run --rm ciframe python scripts/regressao_se
 
 ## O que ficou de fora
 
-- As regras do `POST /sequencias` não estão no script. Elas foram conferidas uma vez, à mão, como mostra a tabela acima.
+- O script grava sequências no banco. Ele roda no container com `--rm` e sem volume, então começa sempre com o banco vazio. Rodado fora do Docker, ele grava em `data/db/` e o caso `D7+ G7+` passa a dar 409 na segunda vez.
 - O frontend não tem teste automatizado. O projeto não tem nenhuma ferramenta de teste para JavaScript. A página foi testada no navegador.
 - O teste não roda com o volume montado. A persistência entre containers foi conferida só no teste manual do passo 8.
 - O tempo da busca (cerca de 55 ms) foi medido à mão na fase de pesquisa e não é conferido pelo script.
 - Acordes com `+`, `7M` e `sus` não estão na paleta do modal. O caso `D7+,G7+` foi testado só pela API.
 - Um `POST` com HTML no lugar do acorde responde 201. Isso foi conferido à mão e ficou como risco aceito no plano, sem teste no script.
-- O `/review-code` do RePPIT não chegou a rodar. A cota gratuita do BigPickle acabou antes dessa fase. Na mesma sessão, tentei o Gemma 4 e o Gemini 3.5 Flash-Lite pela chave gratuita do Google. Os dois pararam no limite de tokens por minuto, porque cada pedido manda o histórico inteiro da sessão. As tentativas estão no log.
-- No teste do navegador apareceram dois detalhes visuais que não foram corrigidos. Os hexágonos `F` e `F#` quase somem no modal, porque a cor deles na paleta (`#ba007c`) é quase igual ao fundo. Isso já acontecia na `#/poracordes`. O aviso de sequência repetida aparece numa caixa roxa que vai até o fim da tela.
+- Os hexágonos da paleta no modal ficaram todos brancos, com o texto rosa. Foi a correção para o `F` e o `F#`, que sumiam no fundo rosa. As cores da paleta continuam na sequência em construção, no topo do modal, onde o `F` ainda fica pouco visível.
+
+## Revisão de código
+
+A cota gratuita do BigPickle acabou antes da revisão. Na sessão principal, o Gemma 4 e o Gemini 3.5 Flash-Lite pararam no limite de tokens por minuto, porque cada pedido manda o histórico inteiro da sessão. A revisão rodou numa sessão separada, só com o diff do código (`git show HEAD -- main.py sequencias_db.py static scripts`). Uma primeira tentativa dessa sessão separada incluiu os documentos no diff e também estourou o limite.
+
+A primeira resposta da revisão trouxe só elogios e uma sugestão de validar espaços internos nos acordes, que não foi seguida porque a página só envia acordes da paleta. Apontei os problemas vistos no teste do navegador e o agente corrigiu:
+
+- O clique repetido no mesmo acorde tirava o último acorde, o que impedia montar `C C G`. Agora o clique só acrescenta e a remoção fica com a lixeira.
+- O `F` e o `F#` sumiam na paleta do modal.
+- As regras do `POST` entraram no script de regressão.
+
+A regressão rodou de novo depois das correções, com 0 diferenças.
 
 ## Sugestões para os comandos do RePPIT
 

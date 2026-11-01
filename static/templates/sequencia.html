@@ -8,8 +8,8 @@
         </div>
         <br style="clear: both;">
         <button type="button" class="btn btn-primary btn-block" ng-click="Sequencia.abrirModal()">Nova sequência</button>
-        <p class="text-center" ng-if="Sequencia.erroCadastro"><strong>{{Sequencia.erroCadastro}}</strong></p>
-        <p class="text-center" ng-if="Sequencia.avisoCadastro"><strong>{{Sequencia.avisoCadastro}}</strong></p>
+        <p class="text-center" ng-if="Sequencia.erroCadastro" style="word-break: break-word;"><strong>{{Sequencia.erroCadastro}}</strong></p>
+        <p class="text-center" ng-if="Sequencia.avisoCadastro" style="word-break: break-word;"><strong>{{Sequencia.avisoCadastro}}</strong></p>
         <button class="search-results-count" ng-if="Sequencia.showSearchResultsCount" ng-click="Sequencia.goToResults()">
           <span class="glyphicon glyphicon-triangle-bottom bounce animated infinite"></span>
           <br>

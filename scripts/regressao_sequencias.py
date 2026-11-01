@@ -133,6 +133,58 @@ def check_busca_minuscula(client):
     print('bm,g,d,a == Bm,G,D,A: ok (%d musicas)' % len(minuscula))
 
 
+def check_post_sequencias(client):
+    """Testa os casos do POST /sequencias: 400, 409, normalização GM/Gm e D7+,G7+."""
+    # 1. Erro 400: corpo vazio / não JSON / lista inválida / acordes vazios / ; ou ,
+    r = client.post('/sequencias', data='nao-json')
+    assert r.status_code == 400
+
+    r = client.post('/sequencias', json={'acordes': 'nao-lista'})
+    assert r.status_code == 400
+
+    r = client.post('/sequencias', json={})
+    assert r.status_code == 400
+
+    r = client.post('/sequencias', json={'acordes': []})
+    assert r.status_code == 400
+
+    r = client.post('/sequencias', json={'acordes': [' ']})
+    assert r.status_code == 400
+
+    r = client.post('/sequencias', json={'acordes': ['C', 'D;E']})
+    assert r.status_code == 400
+
+    print('POST /sequencias validacoes 400: ok')
+
+    # 2. Conflito 409 para sequência já existente (ex: C, G, Am, F)
+    r = client.post('/sequencias', json={'acordes': ['C', 'G', 'Am', 'F']})
+    assert r.status_code == 409
+    data = json.loads(r.get_data(as_text=True))
+    assert 'id' in data
+    print('POST /sequencias 409 existente: ok')
+
+    # 3. GM e Gm diferentes
+    r1 = client.post('/sequencias', json={'acordes': ['Gm', 'F']})
+    r2 = client.post('/sequencias', json={'acordes': ['GM', 'F']})
+    assert r1.status_code in (201, 409)
+    assert r2.status_code in (201, 409)
+    # Se GM for normalizado para Gm, deve dar conflito com Gm se inserido depois,
+    # mas o normalizador define primeira maiúscula e resto igual: 'GM'[0].upper() + 'GM'[1:] -> 'GM' != 'Gm'
+    d1 = json.loads(client.get('/sequencias').get_data(as_text=True))
+    gm_encontrado = any(s['acordes'] == ['Gm', 'F'] for s in d1)
+    gm_maiusculo_encontrado = any(s['acordes'] == ['GM', 'F'] for s in d1)
+    assert gm_encontrado and gm_maiusculo_encontrado
+    print('GM e Gm distintos: ok')
+
+    # 4. Sequência D7+, G7+ com 3 músicas esperadas
+    r = client.post('/sequencias', json={'acordes': ['D7+', 'G7+']})
+    assert r.status_code == 201
+    criada = json.loads(r.get_data(as_text=True))
+    http_res = busca_http(client, criada['acordes'])
+    assert len(http_res) == 3, len(http_res)
+    print('POST /sequencias D7+,G7+ com 3 musicas: ok')
+
+
 if __name__ == '__main__':
     check_init_db()
     check_normalizacao()
@@ -140,4 +192,5 @@ if __name__ == '__main__':
     client = main.app.test_client()
     compara(client)
     check_busca_minuscula(client)
+    check_post_sequencias(client)
     print('regressao: ok (199, 296, 4, 5, 7, 3; 0 diferencas na funcao e no /similares)')

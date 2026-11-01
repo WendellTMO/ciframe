@@ -39,7 +39,7 @@
    - Cada sequência da API é convertida para `{id: 3, acordes: [{acorde: 'C', cor: '#2E1C74'}, ...]}`. É o formato que o template e o `createChordsString` usam, com o `id` preservado. A sequência recém-criada passa pela mesma conversão.
    - O campo de texto e o botão de cadastro saem. No lugar, um botão "Nova sequência" abaixo da lista abre um card no meio da tela (modal) com a sequência em construção no topo e, abaixo, os acordes para escolher.
    - A lista de acordes e a paleta de cores saem do `acordes.js` para a constante `ACORDES` no `app.js`, usada pelos dois controllers. A página `#/poracordes` continua com o mesmo comportamento e o modal não duplica as cores.
-   - Cada clique num acorde da lista acrescenta ele no fim da sequência em construção, que aparece no topo do modal com o `df-hex` e a cor da paleta. Clicar de novo no mesmo acorde do fim tira esse acorde.
+   - Cada clique num acorde da lista acrescenta ele no fim da sequência em construção, que aparece no topo do modal com o `df-hex` e a cor da paleta.
    - Ao passar o mouse em qualquer acorde do topo, ele fica vermelho e mostra o ícone de lixeira no centro do hexágono. Clicar na lixeira remove aquele acorde.
    - "Salvar" faz o `POST /sequencias`. O 201 acrescenta a sequência nova à lista e fecha o modal. O 409 usa o `id` da resposta para selecionar a existente, avisa e fecha o modal. O 400 mostra a mensagem de erro dentro do modal, que continua aberto para o usuário corrigir.
    - O modal tem um botão de fechar que descarta a sequência em construção.
