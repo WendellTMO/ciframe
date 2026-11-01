@@ -1,8 +1,10 @@
 # coding: utf-8
 import json
+import sqlite3
 from flask import Flask, request
 import sys
 from musica import *
+from sequencias_db import buscar, criar, init_db, listar, normaliza_acorde
 from collections import OrderedDict
 import unicodedata
 
@@ -37,12 +39,6 @@ TAM_PAGINA = 100
 genero_musicas = {}
 generos = set()
 acordes = set()
-sequencias = {'BmGDA' : 0,
-        'CGAmF' : 1,
-        'EmG' : 2,
-        'CA7DmG7' : 3,
-        'GmF' : 4,
-        'CC7FFm' : 5}
 
 musicas_dict = {}
 
@@ -96,6 +92,8 @@ for k,v in genero_musicas.items():
     genero_musicas[k].sort(key = lambda x : x.popularidade, reverse = True)
 
 f.close()
+
+init_db()
 
 
 @app.route('/')
@@ -188,25 +186,46 @@ def get_similares():
         musica = musicas[id_musica_tag]
         acordes = musica.acordes
     elif sequencia_tag:
-        acordes = sequencia_tag.replace(',','')
-        similares = []
-
-        if acordes in sequencias:
-            id_seq = sequencias[acordes]
-            similares = get_pagina(get_similares_por_sequencia(id_seq, generos_key), pagina_tag)
+        acordes_seq = [acorde.strip() for acorde in sequencia_tag.split(',')
+                       if acorde.strip()]
+        encontrada = buscar(acordes_seq)
+        if encontrada is None:
+            return json.dumps([])
+        similares = get_pagina(
+            get_similares_por_sequencia(encontrada['acordes'], generos_key),
+            pagina_tag)
         return json.dumps(similares)
 
     similares = get_similares(acordes, generos_key, id_musica_tag)
 
     return json.dumps(get_pagina(similares, pagina_tag))
 
-def get_similares_por_sequencia(id_seq, generos_key):
+def casa_com_sequencia(cifra, acordes):
+    sequencia = list(acordes)
+    if not sequencia:
+        return False
+
+    vocabulario = set(sequencia)
+    normalizados = []
+    for token in cifra:
+        acorde = normaliza_acorde(token)
+        if acorde not in vocabulario:
+            return False
+        normalizados.append(acorde)
+
+    tamanho = len(sequencia)
+    for inicio in range(len(normalizados) - tamanho + 1):
+        if normalizados[inicio:inicio + tamanho] == sequencia:
+            return True
+    return False
+
+def get_similares_por_sequencia(acordes, generos_key):
     # filtra para melhor desempenho
     collection = apply_filtro(musicas.values(), generos_key)
 
     similares = []
     for musica in collection:
-        if str(id_seq) in musica.seqs_famosas:
+        if casa_com_sequencia(musica.cifra, acordes):
             similar = {
                 'id_unico_musica' : musica.id_unico_musica,
                 'id_artista' : musica.id_artista,
@@ -221,6 +240,38 @@ def get_similares_por_sequencia(id_seq, generos_key):
             similares.append(similar)
 
     return similares
+
+
+@app.route('/sequencias')
+def get_sequencias():
+    return json.dumps(listar())
+
+
+@app.route('/sequencias', methods=['POST'])
+def post_sequencia():
+    corpo = request.get_json(silent=True)
+    if not isinstance(corpo, dict):
+        return json.dumps({'erro': 'o corpo precisa ser um objeto JSON'}), 400
+
+    acordes_novos = corpo.get('acordes')
+    if not isinstance(acordes_novos, list) or not all(
+            isinstance(acorde, str) for acorde in acordes_novos):
+        return json.dumps({'erro': 'acordes precisa ser uma lista de textos'}), 400
+
+    acordes_novos = [acorde.strip() for acorde in acordes_novos
+                     if acorde.strip()]
+    if any(';' in acorde or ',' in acorde for acorde in acordes_novos):
+        return json.dumps({'erro': 'acorde nao pode conter ; ou ,'}), 400
+    if not acordes_novos:
+        return json.dumps({'erro': 'informe pelo menos um acorde'}), 400
+
+    try:
+        nova = criar(acordes_novos)
+    except sqlite3.IntegrityError:
+        existente = buscar(acordes_novos)
+        return json.dumps({'id': existente['id']}), 409
+
+    return json.dumps(nova), 201
 
 
 def get_pagina(colecao, pagina_tag):

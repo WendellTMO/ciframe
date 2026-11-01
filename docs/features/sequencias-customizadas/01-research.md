@@ -1,9 +1,5 @@
 # Pesquisa — Sequências de Acordes Customizadas
 
-> Preencha esta fase antes de propor qualquer solução. O objetivo é investigar as
-> perguntas abaixo com evidência real (código, dados, testes rápidos que você mesmo
-> rodou), não chutar. Apague este bloco de instruções antes de entregar.
-
 ## Perguntas que você precisa responder
 
 1. **Algoritmo de matching**: hoje, as 6 sequências hardcoded em `main.py` (linhas
@@ -34,11 +30,37 @@
 
 ## Registro das descobertas
 
-[Para cada pergunta acima: o que você encontrou, com referência de onde (arquivo,
-linha, documentação, teste que você rodou).]
+1. Da maneira que está o backend não olha os acordes para buscar por sequência. Em `main.py:209` ele só confere se o id da sequência está na coluna 7 do CSV (`seqs_famosas`). Essa coluna foi gerada pela função `get_famosas` em `generate_data_set.py`.
+
+A coluna 7 guarda um número de 0 a 5 que diz qual das 6 sequências a música tem: 0 = Bm G D A, 1 = C G Am F, 2 = Em G, 3 = C A7 Dm G7, 4 = Gm F, 5 = C C7 F Fm. Quando o usuário busca por C G Am F, o backend junta os acordes em `CGAmF` e acha no dicionário de `main.py` que isso corresponde ao número 1. Depois devolve as músicas que têm 1 na coluna 7.
+
+A ordem importa, já que C G Am F e F Am G C são progressões diferentes.
+
+Além disso, todos os acordes da música precisam pertencer à sequência. Uma música com C, G, Am, F e Dm não entra em C G Am F.
+
+Repetição de acorde não atrapalha, desde que a sequência apareça seguida pelo menos uma vez. Em C C G Am F, a sequência C G Am F aparece a partir do segundo acorde.
+
+A única normalização que o script faz é passar tudo para minúsculo.
+
+2. A regra da resposta 1 foi implementada em `research/seq_famosa_rule.py`. O script carrega as músicas pelo próprio `main.py` (67.585 músicas, cifra já limpa por `limpa_cifra`), aplica a regra nas 6 sequências que estão em um dicionário no `main.py:` e compara com `seqs_famosas`.
+
+A hipótese está confirmada, tivemos 0 diferenças nas 67.585 músicas. Nenhuma música tem mais de uma sequência.
+
+3. O SQLite já vem com o Python, então não precisa mudar nada no Dockerfile. Outros bancos embarcados, como TinyDB e LMDB, precisam de uma linha no `requirements.txt`. PostgreSQL e MySQL ficam de fora porque rodam como um serviço separado.
+
+O Dockerfile atual não usa volume, então o banco fica salvo dentro do container. Os dados continuam lá depois de um `docker restart`, mas se perdem quando o container é recriado. Para não perder, é preciso rodar com um volume.
+
+4. Da maneira que está a página `#/porsequencia` não busca as sequências no backend. Ela mostra 4 sequências escritas direto no `sequencia.js`: Bm G D A, C G Am F, Gm F e C C7 F Fm. Faltam Em G e C A7 Dm G7.
+
+Quando o usuário clica numa sequência, a página chama `/similares?sequencia=Bm,G,D,A` e lista as músicas por popularidade. Só aparecem as 100 primeiras, porque a página não tem paginação. Também não existe campo para cadastrar uma sequência nova.
+
+Pelo histórico do git, o frontend foi criado com essas 4 sequências antes de o backend ter as 6 e nunca foi atualizado.
 
 ## Trade-offs identificados
 
-[Opções reais que você considerou para cada decisão (algoritmo, banco, frontend) e
-os prós/contras de cada uma. Isso alimenta a fase de proposta — não decida ainda
-aqui.]
+Algoritmo de matching: usar a mesma regra do `get_famosas` garante que as 6 sequências continuam com os mesmos resultados, já que deu 0 diferenças. O lado ruim é que ela é bem restrita, porque a música precisa usar só os acordes da sequência. Uma regra mais solta acharia mais músicas, mas mudaria os resultados das 6 sequências.
+
+Banco de dados: o SQLite já vem com o Python e não muda nada no Dockerfile. TinyDB e LMDB também funcionam, mas adicionam uma dependência. Qualquer opção perde os dados quando o container é recriado, a menos que o `docker run` use um volume.
+
+Frontend: dá para alterar a página `#/porsequencia` atual, trocando a lista do JS por uma lista vinda do backend e adicionando um formulário de cadastro. A outra opção é criar uma página nova só para cadastro, o que mexe menos no código antigo, mas separa o cadastro da busca.
+

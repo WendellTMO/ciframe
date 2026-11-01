@@ -21,7 +21,7 @@ Docker (matches how the app actually ships):
 
 ```
 docker build -t ciframe .
-docker run -p 8080:8080 ciframe
+docker run -p 8080:8080 -v ciframe-seq:/app/data/db ciframe
 ```
 
 Or a plain virtualenv:

@@ -7,6 +7,9 @@
           <df-hex acorde="{{acordeon.acorde}}" acorde-color="{{acordeon.cor}}" acorde-checked="Sequencia.temAcorde(acordeon)" ng-repeat="acordeon in sequencia.acordes"></df-hex>
         </div>
         <br style="clear: both;">
+        <button type="button" class="btn btn-primary btn-block" ng-click="Sequencia.abrirModal()">Nova sequência</button>
+        <p class="text-center" ng-if="Sequencia.erroCadastro"><strong>{{Sequencia.erroCadastro}}</strong></p>
+        <p class="text-center" ng-if="Sequencia.avisoCadastro"><strong>{{Sequencia.avisoCadastro}}</strong></p>
         <button class="search-results-count" ng-if="Sequencia.showSearchResultsCount" ng-click="Sequencia.goToResults()">
           <span class="glyphicon glyphicon-triangle-bottom bounce animated infinite"></span>
           <br>
@@ -59,5 +62,28 @@
         </div>
 
     </div>
+  </div>
+</div>
+
+<div class="modal-sequencia" ng-if="Sequencia.modalAberta">
+  <div class="modal-sequencia-card">
+    <button type="button" class="modal-sequencia-fechar" ng-click="Sequencia.fecharModal()">&times;</button>
+    <h4 class="text-center">Monte sua sequência</h4>
+    <div class="sequencia-preview">
+      <div class="sequencia-preview-acorde sequencia-preview-removivel" ng-repeat="acordeon in Sequencia.novaSequencia">
+        <df-hex acorde="{{acordeon.acorde}}" acorde-color="{{acordeon.cor}}"></df-hex>
+        <span class="glyphicon glyphicon-trash sequencia-preview-lixeira" ng-click="Sequencia.removerAcorde($index)"></span>
+      </div>
+      <p class="text-center" ng-if="!Sequencia.novaSequencia.length">Clique nos acordes abaixo para montar a sequência</p>
+      <br style="clear: both;">
+    </div>
+    <div class="acordes-container" ng-repeat="acordesCollection in Sequencia.acordes">
+      <df-hex acorde="{{acordeon.acorde}}" acorde-color="{{acordeon.cor}}" ng-repeat="acordeon in acordesCollection" ng-click="Sequencia.adicionarAcorde(acordeon)"></df-hex>
+    </div>
+    <br style="clear: both;">
+    <p class="text-center" ng-if="Sequencia.erroCadastro"><strong>{{Sequencia.erroCadastro}}</strong></p>
+    <button type="button" class="btn btn-primary btn-block" ng-click="Sequencia.salvarSequencia()" ng-disabled="Sequencia.cadastrando">
+      {{Sequencia.cadastrando ? 'Salvando...' : 'Salvar'}}
+    </button>
   </div>
 </div>
