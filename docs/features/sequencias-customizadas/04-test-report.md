@@ -8,8 +8,8 @@ O teste automatizado é o `scripts/regressao_sequencias.py`. Ele roda dentro do 
 - A comparação acorde por acorde: `Am;A` não casa com `oasis_the-swamp-song`, que só tem Am.
 - O reinício com o banco já criado: rodar o `init_db` duas vezes mantém as 6 sequências, sem duplicar.
 - O teste de regressão das 6 sequências, descrito na próxima seção.
-- A busca em minúsculo: `bm,g,d,a` encontra as mesmas 199 músicas que `Bm,G,D,A`.
-- As regras do `POST /sequencias`: 400 para corpo que não é JSON, `acordes` que não é lista, corpo sem `acordes`, lista vazia, lista só com espaço e acorde com `;`. Também 409 para `C G Am F`, `GM F` e `Gm F` gravadas como sequências diferentes e `D7+ G7+` criada com 3 músicas.
+- A busca em minúsculo: `bm,g,d,a` encontra as mesmas 199 músicas que `Bm,G,D,A`, tanto na função quanto no `/similares`.
+- As regras do `POST /sequencias`: 400 para corpo que não é JSON, `acordes` que não é lista, corpo sem `acordes`, lista vazia, lista só com espaço e acorde com `;`. Também 409 para `C G Am F`, que já existe. `GM F` é aceita com 201 e fica gravada separada de `Gm F`. `C7M G` e `C7m G` são aceitas como sequências diferentes. `A E F#m D` é criada e encontra 159 músicas. `D7+ G7+` é criada e encontra 3.
 
 Antes de entrarem no script, as regras do `POST /sequencias` foram conferidas à mão pelo `test_client` do Flask dentro do Docker:
 
@@ -80,6 +80,15 @@ A primeira resposta da revisão trouxe só elogios e uma sugestão de validar es
 - As regras do `POST` entraram no script de regressão.
 
 A regressão rodou de novo depois das correções, com 0 diferenças.
+
+No dia seguinte a cota do BigPickle voltou e uma segunda revisão rodou na sessão principal, sobre todo o diff desde o último commit antes da feature. Ela achou problemas que a primeira não pegou. Foram corrigidos:
+
+- A `casa_com_sequencia` normalizava só os acordes da música. Chamada direto com `bm,g,d,a`, ela devolvia 0 músicas. Pelo `/similares` funcionava porque o banco já guarda os acordes normalizados. Agora ela normaliza os dois lados e o script testa a chamada direta.
+- O teste de `GM`/`Gm` aceitava 201 ou 409 e nunca falhava. Agora ele exige 409 para `Gm F` e 201 para `GM F`.
+- O `AGENTS.md` ainda dizia que o projeto não tem banco.
+- O relatório dizia que `GM F` respondia 409. O certo é 201.
+
+Os smells apontados (duplicação da regra entre `main.py` e `research/seq_famosa_rule.py`, nomes e montagem repetida de `{id, acordes}`) não foram corrigidos, porque não mudam o comportamento. O script da pesquisa continua em `research/` como evidência, com a regra antiga de comparar texto.
 
 ## Sugestões para os comandos do RePPIT
 

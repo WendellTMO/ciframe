@@ -201,7 +201,7 @@ def get_similares():
     return json.dumps(get_pagina(similares, pagina_tag))
 
 def casa_com_sequencia(cifra, acordes):
-    sequencia = list(acordes)
+    sequencia = [normaliza_acorde(acorde) for acorde in acordes]
     if not sequencia:
         return False
 

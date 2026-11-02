@@ -6,9 +6,10 @@ similar songs. Full description: [README.md](README.md).
 
 ## Stack
 
-- Backend: Python 3.9, Flask 3.1, gunicorn. Single file (`main.py`) that
-  loads `data/top/dataset_final.csv` into memory once at startup — there is
-  no database.
+- Backend: Python 3.9, Flask 3.1, gunicorn. `main.py` loads
+  `data/top/dataset_final.csv` into memory once at startup. The chord
+  sequence catalog lives in SQLite (`sequencias_db.py`, file in `data/db/`);
+  see [docs/adr/0002-persist-custom-sequences.md](docs/adr/0002-persist-custom-sequences.md).
 - Frontend: AngularJS 1.4.9 + jQuery, loaded from CDN in `static/index.html`,
   no build step. Legacy, and there's no plan to modernize the stack itself —
   but touching it is no longer off-limits when a task needs it; see

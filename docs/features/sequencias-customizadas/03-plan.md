@@ -15,7 +15,7 @@
    - Primeiro confere se todos os acordes da música pertencem à sequência e para no primeiro de fora. Essa parada deixa a busca em cerca de 55 ms. Normalizando a cifra inteira antes, a busca leva cerca de 290 ms.
    - Depois procura a sequência na cifra, em ordem e com os acordes seguidos.
 
-   No mesmo passo, reescrever o `research/seq_famosa_rule.py` como `scripts/regressao_sequencias.py`. O script compara a função com a coluna `SEQ_FAMOSA` e precisa dar 199, 296, 4, 5, 7 e 3 músicas, com 0 diferenças, antes de seguir. Esses números saem iguais com qualquer uma das normalizações e formas de comparar testadas na pesquisa. Por isso o script também confere `bm`/`Bm`, `C7M`/`C7m`, `Gm`/`GM` e que `Am;A` não casa com `oasis_the-swamp-song`. O teste roda no Docker:
+   No mesmo passo, criar o `scripts/regressao_sequencias.py` a partir do `research/seq_famosa_rule.py`. O script da pesquisa continua em `research/` como evidência da fase de pesquisa, com a regra antiga de comparar texto. O script compara a função com a coluna `SEQ_FAMOSA` e precisa dar 199, 296, 4, 5, 7 e 3 músicas, com 0 diferenças, antes de seguir. Esses números saem iguais com qualquer uma das normalizações e formas de comparar testadas na pesquisa. Por isso o script também confere `bm`/`Bm`, `C7M`/`C7m`, `Gm`/`GM` e que `Am;A` não casa com `oasis_the-swamp-song`. O teste roda no Docker:
 
    ```
    docker build -t ciframe . && docker run --rm ciframe python scripts/regressao_sequencias.py
@@ -45,11 +45,16 @@
    - O `F` e o `F#` sumiam no fundo rosa do modal. A paleta do modal passou a usar hexágonos brancos.
    - Os casos do `POST` (400, 409, `GM`/`Gm` e `D7+,G7+`) entram no teste de regressão.
 
+10. [x] Aplicar as correções da segunda revisão, feita com o BigPickle:
+   - A `casa_com_sequencia` passa a normalizar também os acordes da sequência.
+   - O teste de `GM`/`Gm` exige 409 para `Gm F` e 201 para `GM F`.
+   - O script passa a testar os 159 de `A E F#m D` e o `POST` de `C7M G` e `C7m G`.
+
 ## Mudanças durante a implementação
 
 - O primeiro plano tinha um campo de texto para digitar os acordes. Depois do teste da página, o campo foi trocado pelo modal com a paleta, para o visitante não precisar saber escrever os acordes.
 - A exclusão de sequências chegou a entrar no plano, com as 6 originais protegidas pelos acordes. Ela saiu antes de ser implementada porque a cota do BigPickle acabou (ver `02-proposal.md`).
-- O passo 9 entrou depois da revisão de código.
+- Os passos 9 e 10 entraram depois das duas revisões de código.
 
 ## Arquivos afetados
 

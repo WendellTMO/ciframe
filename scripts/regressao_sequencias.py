@@ -130,6 +130,11 @@ def check_busca_minuscula(client):
     maiuscula = busca_http(client, SEQUENCIAS_INICIAIS[0])
     assert minuscula == maiuscula, len(minuscula ^ maiuscula)
     assert len(minuscula) == ESPERADO[0], len(minuscula)
+
+    # A função normaliza também os acordes da sequência, não só os da música.
+    regra_minuscula = {m.id_unico_musica for m in main.musicas.values()
+                       if main.casa_com_sequencia(m.cifra, ['bm', 'g', 'd', 'a'])}
+    assert regra_minuscula == maiuscula, len(regra_minuscula ^ maiuscula)
     print('bm,g,d,a == Bm,G,D,A: ok (%d musicas)' % len(minuscula))
 
 
@@ -163,20 +168,40 @@ def check_post_sequencias(client):
     assert 'id' in data
     print('POST /sequencias 409 existente: ok')
 
-    # 3. GM e Gm diferentes
+    # 3. GM e Gm diferentes: Gm F já está no banco, GM F é nova
     r1 = client.post('/sequencias', json={'acordes': ['Gm', 'F']})
     r2 = client.post('/sequencias', json={'acordes': ['GM', 'F']})
-    assert r1.status_code in (201, 409)
-    assert r2.status_code in (201, 409)
-    # Se GM for normalizado para Gm, deve dar conflito com Gm se inserido depois,
-    # mas o normalizador define primeira maiúscula e resto igual: 'GM'[0].upper() + 'GM'[1:] -> 'GM' != 'Gm'
+    assert r1.status_code == 409, r1.status_code
+    assert r2.status_code == 201, r2.status_code
     d1 = json.loads(client.get('/sequencias').get_data(as_text=True))
     gm_encontrado = any(s['acordes'] == ['Gm', 'F'] for s in d1)
     gm_maiusculo_encontrado = any(s['acordes'] == ['GM', 'F'] for s in d1)
     assert gm_encontrado and gm_maiusculo_encontrado
-    print('GM e Gm distintos: ok')
+    print('GM e Gm distintos: ok (Gm F 409, GM F 201)')
 
-    # 4. Sequência D7+, G7+ com 3 músicas esperadas
+    # 4. C7M e C7m diferentes, as duas aceitas
+    r1 = client.post('/sequencias', json={'acordes': ['C7M', 'G']})
+    r2 = client.post('/sequencias', json={'acordes': ['C7m', 'G']})
+    assert r1.status_code == 201, r1.status_code
+    assert r2.status_code == 201, r2.status_code
+    id_maior = json.loads(r1.get_data(as_text=True))['id']
+    id_menor = json.loads(r2.get_data(as_text=True))['id']
+    assert id_maior != id_menor
+    d2 = json.loads(client.get('/sequencias').get_data(as_text=True))
+    assert any(s['acordes'] == ['C7M', 'G'] for s in d2)
+    assert any(s['acordes'] == ['C7m', 'G'] for s in d2)
+    print('C7M e C7m distintos: ok (201 para os dois)')
+
+    # 5. Sequência A, E, F#m, D com 159 músicas esperadas
+    r = client.post('/sequencias', json={'acordes': ['A', 'E', 'F#m', 'D']})
+    assert r.status_code == 201, r.status_code
+    criada = json.loads(r.get_data(as_text=True))
+    assert criada['acordes'] == ['A', 'E', 'F#m', 'D'], criada['acordes']
+    http_res = busca_http(client, criada['acordes'])
+    assert len(http_res) == 159, len(http_res)
+    print('POST /sequencias A,E,F#m,D com 159 musicas: ok')
+
+    # 6. Sequência D7+, G7+ com 3 músicas esperadas
     r = client.post('/sequencias', json={'acordes': ['D7+', 'G7+']})
     assert r.status_code == 201
     criada = json.loads(r.get_data(as_text=True))
